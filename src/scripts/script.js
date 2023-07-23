@@ -1,5 +1,18 @@
 const API_URL = 'https://resonant-deluxe-thorium.glitch.me/'
 
+const price = {
+  Клубника: 60,
+  Банан: 50,
+  Манго: 70,
+  Киви: 55,
+  Маракуйя: 70,
+  Яблоко: 45,
+  Мята: 50,
+  Лёд: 10,
+  Биоразлагаемый: 20,
+  Пластиковый: 0,
+}
+
 const getData = async () => {
   const response = await fetch(`${API_URL}api/goods`);
   const data = await response.json()
@@ -25,7 +38,7 @@ const createCard = (item) => {
                 <p class="cocktail__size">${item.size}</p>
               </div>
 
-              <button class="btn cocktail__btn cocktail__btn_make" data-id="${item.id}">Добавить</button>
+              <button class="btn cocktail__btn cocktail__btn_add" data-id="${item.id}">Добавить</button>
             </div>
   `
 
@@ -47,17 +60,17 @@ const scrollService = {
     padding-right: ${window.innerWidth - document.body.offsetWidth}px;
     `
   },
-  enabledScroll(){
+  enabledScroll() {
     document.body.style.cssText = '';
-    window.scroll({ top: this.scrollPosition });
+    window.scroll({top: this.scrollPosition});
     document.documentElement.style.scrollBehavior = ''
   }
 }
 
 const modalController = ({modal, btnOpen, time = 300}) => {
-  const buttonElem = document.querySelector(btnOpen)
+  const buttonElems = document.querySelectorAll(btnOpen)
   const modalElem = document.querySelector(modal)
-  
+
   modalElem.style.cssText = `
   display: flex;
   visibility: hidden;
@@ -72,7 +85,7 @@ const modalController = ({modal, btnOpen, time = 300}) => {
     if (target === modalElem || code === 'Escape') {
       modalElem.style.opacity = 0;
 
-      setTimeout(()=>{
+      setTimeout(() => {
         modalElem.style.visibility = 'hidden';
         scrollService.enabledScroll();
       }, time)
@@ -88,10 +101,72 @@ const modalController = ({modal, btnOpen, time = 300}) => {
     scrollService.disabledScroll()
   }
 
-  buttonElem.addEventListener('click', openModal)
+  buttonElems.forEach((buttonElem) => {
+    buttonElem.addEventListener('click', openModal)
+  })
+
   modalElem.addEventListener('click', closeModal)
 
   return {openModal, closeModal}
+}
+
+const getFormData = (form) => {
+  const formData = new FormData(form)
+  const data = {}
+  for (const [name, value] of (formData.entries())) {
+    if (data[name]) {
+      if (!Array.isArray(data[name])) {
+        data[name] = [data[name]]
+      }
+      data[name].push(value)
+    } else {
+      data[name] = value
+    }
+  }
+
+  return data
+}
+
+const calculateTotalPrice = (form, startPrice) => {
+  let totalPrice = startPrice
+
+  const data = getFormData(form)
+
+  if (Array.isArray(data.ingredients)) {
+    data.ingredients.forEach((item) => {
+      totalPrice += price[item] || 0
+    })
+  } else {
+    totalPrice += price[data.ingredients] || 0
+  }
+
+  if (Array.isArray(data.toppings)) {
+    data.toppings.forEach((item) => {
+      totalPrice += price[item] || 0
+    })
+  } else {
+    totalPrice += price[data.toppings] || 0
+  }
+  
+  totalPrice += price[data.cup] || 0
+  
+  return totalPrice
+}
+
+const calculateMakeYourOwn = () => {
+  const formMakeYourOwn = document.querySelector('.make__form_make-your-own')
+  const makeInputPrice = formMakeYourOwn.querySelector('.make__input_price')
+  const makeTotalPrice = formMakeYourOwn.querySelector('.make__total-price')
+
+  const handlerChange = () => {
+    const totalPrice = calculateTotalPrice(formMakeYourOwn, 150)
+    makeInputPrice.value = totalPrice
+    makeTotalPrice.textContent = `${totalPrice} ₽`
+  }
+
+  formMakeYourOwn.addEventListener('change', () => {
+    handlerChange()
+  })
 }
 
 const init = async () => {
@@ -99,13 +174,12 @@ const init = async () => {
     modal: '.modal_order',
     btnOpen: '.header__btn-order',
   })
-  modalController({
-    modal: '.modal_make',
-    btnOpen: '.cocktail__btn_make',
-  })
+
+  calculateMakeYourOwn()
+
   const goodsListElem = document.querySelector('.goods__list')
   const data = await getData()
-  
+
   const cartsCocktail = data.map((item) => {
     const li = document.createElement('li')
     li.classList.add('goods__item')
@@ -114,6 +188,17 @@ const init = async () => {
   })
 
   goodsListElem.append(...cartsCocktail)
+
+  modalController({
+    modal: '.modal__main_make-your-own',
+    btnOpen: '.cocktail__btn_make',
+  })
+
+  modalController({
+    modal: '.modal_add',
+    btnOpen: '.cocktail__btn_add',
+  })
+
 }
 
 init()
