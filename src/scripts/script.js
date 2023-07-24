@@ -13,6 +13,30 @@ const price = {
   Пластиковый: 0,
 }
 
+const cartDataControl = {
+  getLS() {
+    return JSON.parse(localStorage.getItem('freshyBarCart') || '[]')
+  },
+  addLS(item) {
+    const cartData = this.getLS()
+    item.idLS = Math.random().toString(36).substring(2, 8)
+    cartData.push(item)
+    localStorage.setItem('freshyBarCart', JSON.stringify(cartData))
+  },
+  removeLS(idLS) {
+    const cartData = this.getLS()
+    const index = cartData.findIndex((item) => item.idLS === idLS)
+    if (index !== -1) {
+      cartData.splice(index, 1)
+    }
+    localStorage.setItem('freshyBarCart', JSON.stringify(cartData))
+  },
+  cleanLS() {
+    localStorage.removeItem('freshyBarCart')
+  },
+
+}
+
 const getData = async () => {
   const response = await fetch(`${API_URL}api/goods`);
   const data = await response.json()
@@ -82,7 +106,7 @@ const modalController = ({modal, btnOpen, time = 300, open, close}) => {
     const target = event.target
     const code = event.code
 
-    if (target === modalElem || code === 'Escape') {
+    if (event === 'close' || target === modalElem || code === 'Escape') {
       modalElem.style.opacity = 0;
 
       setTimeout(() => {
@@ -114,6 +138,9 @@ const modalController = ({modal, btnOpen, time = 300, open, close}) => {
   })
 
   modalElem.addEventListener('click', closeModal)
+
+  modalElem.closeModal = closeModal
+  modalElem.openModal = openModal
 
   return {openModal, closeModal}
 }
@@ -161,20 +188,59 @@ const calculateTotalPrice = (form, startPrice) => {
   return totalPrice
 }
 
+const formControl = (form, callback) => {
+  form.addEventListener('submit', (event) => {
+    event.preventDefault()
+    
+    const data = getFormData(form)
+    cartDataControl.addLS(data)
+    if (callback) {
+      callback()
+    }
+  })
+}
+
 const calculateMakeYourOwn = () => {
-  const formMakeYourOwn = document.querySelector('.make__form_make-your-own')
-  const makeInputPrice = formMakeYourOwn.querySelector('.make__input_price')
-  const makeTotalPrice = formMakeYourOwn.querySelector('.make__total-price')
+  const modalMakeOwn = document.querySelector('.modal_make-your-own')
+  const formMakeOwn = modalMakeOwn.querySelector('.make__form_make-your-own')
+  const makeInputTitle = modalMakeOwn.querySelector(".make__input-title")
+  const makeInputPrice = modalMakeOwn.querySelector('.make__input_price')
+  const makeTotalPrice = modalMakeOwn.querySelector('.make__total-price')
+  const makeAddBtn = modalMakeOwn.querySelector(".make__add-btn")
 
   const handlerChange = () => {
-    const totalPrice = calculateTotalPrice(formMakeYourOwn, 150)
+    const totalPrice = calculateTotalPrice(formMakeOwn, 150)
+
+    const data = getFormData(formMakeOwn)
+
+    if (data.ingredients) {
+      const ingredients = Array.isArray(data.ingredients)
+        ? data.ingredients.join(', ')
+        : data.ingredients
+      
+      makeInputTitle.value = `Конструктор: ${ingredients}`
+      makeAddBtn.disabled = false
+    } else {
+      makeAddBtn.disabled = true
+    }
+
     makeInputPrice.value = totalPrice
     makeTotalPrice.textContent = `${totalPrice} ₽`
   }
 
-  formMakeYourOwn.addEventListener('change', () => {
-    handlerChange()
+  formMakeOwn.addEventListener('change', handlerChange)
+  formControl(formMakeOwn, () => {
+    modalMakeOwn.closeModal('close')
   })
+  handlerChange()
+
+  const resetForm = () => {
+    makeTotalPrice.textContent = ''
+    makeAddBtn.disabled = true
+    formMakeOwn.reset()
+  }
+
+  return { resetForm }
 }
 
 const calculateAdd = () => {
@@ -187,15 +253,18 @@ const calculateAdd = () => {
   const makeInputPrice = modalAdd.querySelector('.make__input-price')
   const makeTotalSize = modalAdd.querySelector('.make__total-size')
   const makeInputSize = modalAdd.querySelector('.make__input-size')
-  
+
   const handlerChange = () => {
     const totalPrice = calculateTotalPrice(formAdd, +makeInputStartPrice.value)
     makeInputPrice.value = totalPrice
     makeTotalPrice.textContent = `${totalPrice} ₽`
   }
-  
+
   formAdd.addEventListener('change', handlerChange)
-  
+  formControl(formAdd, ()=>{
+    modalAdd.closest('close')
+  })
+
 
   const fillInForm = (data) => {
     makeTitle.textContent = data.title
@@ -225,7 +294,13 @@ const init = async () => {
     btnOpen: '.header__btn-order',
   })
 
-  calculateMakeYourOwn()
+  const { resetForm: resetFormMakeYourOwn } = calculateMakeYourOwn()
+
+  modalController({
+    modal: '.modal_make-your-own',
+    btnOpen: '.cocktail__btn_make',
+    close: resetFormMakeYourOwn,
+  })
 
   const goodsListElem = document.querySelector('.goods__list')
   const data = await getData()
@@ -239,12 +314,7 @@ const init = async () => {
 
   goodsListElem.append(...cartsCocktail)
 
-  const {fillInForm, resetForm} = calculateAdd()
-
-  modalController({
-    modal: '.modal__main_make-your-own',
-    btnOpen: '.cocktail__btn_make',
-  })
+  const { fillInForm: fillInFormAdd, resetForm: resetFormAdd } = calculateAdd()
 
   modalController({
     modal: '.modal_add',
@@ -252,9 +322,9 @@ const init = async () => {
     open({btn}) {
       const id = btn.dataset.id
       const item = data.find(item => item.id.toString() === id)
-      fillInForm(item)
+      fillInFormAdd(item)
     },
-    close: resetForm
+    close: resetFormAdd
   })
 
 }
