@@ -163,10 +163,10 @@
 
       <form class="order__form">
         <label class="order__label">
-          <input type="text" class="order__input" placeholder="Ваше имя">
+          <input type="text" class="order__input" required name="name" placeholder="Ваше имя">
         </label>
         <label class="order__label">
-          <input type="text" class="order__input" placeholder="Телефон">
+          <input type="text" class="order__input" required name="phone" placeholder="Телефон">
         </label>
 
         <button class="btn order__submit">Заказать</button>
@@ -254,6 +254,8 @@
             <input class="make__input make__input_price"
                    type="hidden" name="price" value="150">
             <p class="make__total-price text-red">150 ₽</p>
+            <input class="make__input make__input_size"
+                   type="hidden" name="size" value="300">
             <p class="make__total-size">300мл</p>
           </div>
         </div>
