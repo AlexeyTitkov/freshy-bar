@@ -6,10 +6,16 @@ import { calculateMakeYourOwn, calculateAdd } from "./formControl.js"
 import { addMouseMoveListener } from "./decorAnimation.js"
 
 const init = async () => {
+  const goodsListElem = document.querySelector('.goods__list')
+  const data = await getData()
+  renderCardsList(goodsListElem, data);
+  
   modalController({
     modal: '.modal_order',
     btnOpen: '.header__btn-order',
-    open: renderCart,
+    open() {
+      renderCart(data);
+    },
   })
 
   const {resetForm: resetFormMakeYourOwn} = calculateMakeYourOwn()
@@ -19,12 +25,7 @@ const init = async () => {
     btnOpen: '.cocktail__btn_make',
     close: resetFormMakeYourOwn,
   })
-
-  const goodsListElem = document.querySelector('.goods__list')
-  const data = await getData()
   
-  renderCardsList(goodsListElem, data);
-
   const {fillInForm: fillInFormAdd, resetForm: resetFormAdd} = calculateAdd()
 
   modalController({

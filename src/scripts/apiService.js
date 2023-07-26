@@ -10,7 +10,7 @@ export const getData = async () => {
   }
 };
 
-export const sentData = async (data) => {
+export const sendData = async (data) => {
   return await fetch(`${API_URL}api/order`, {
     method: "POST",
     body: JSON.stringify(data),
