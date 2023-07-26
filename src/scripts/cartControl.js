@@ -2,6 +2,12 @@ import {getFormData} from "./getFormData.js";
 import {API_URL} from "./config.js";
 import {sendData} from "./apiService.js";
 
+const modalOrder = document.querySelector(".modal_order");
+const orderCount = modalOrder.querySelector(".order__count");
+const orderList = modalOrder.querySelector(".order__list");
+const orderTotalPrice = modalOrder.querySelector(".order__total-price");
+const orderForm = modalOrder.querySelector(".order__form");
+
 export const cartDataControl = {
   getLS() {
     return JSON.parse(localStorage.getItem('freshyBarCart') || '[]')
@@ -16,7 +22,6 @@ export const cartDataControl = {
   removeLS(idls) {
     const cartData = this.getLS();
     const index = cartData.findIndex((item) => item.idls === idls);
-    console.log('index: ', index)
     if (index !== -1) {
       cartData.splice(index, 1);
     }
@@ -72,7 +77,7 @@ export const createCartItem = (item, data) => {
   return li
 }
 
-const renderCartList = ({data, orderCount, orderList, orderTotalPrice}) => {
+const renderCartList = (data) => {
   const orderListData = cartDataControl.getLS()
 
   orderList.textContent = ''
@@ -84,59 +89,42 @@ const renderCartList = ({data, orderCount, orderList, orderTotalPrice}) => {
 
   orderTotalPrice.textContent = `${orderListData.reduce((acc, item) => acc + +item.price, 0)} ₽`
 
-  return orderListData;
 };
 
-export const renderCart = (data) => {
-  const modalOrder = document.querySelector(".modal_order");
-  const orderCount = modalOrder.querySelector(".order__count");
-  const orderList = modalOrder.querySelector(".order__list");
-  const orderTotalPrice = modalOrder.querySelector(".order__total-price");
-  const orderForm = modalOrder.querySelector(".order__form");
+const handlerSubmit = async (e) => {
+  const orderListData = cartDataControl.getLS();
 
-  let orderListData = renderCartList({
-    data,
-    orderCount,
-    orderList,
-    orderTotalPrice,
+  e.preventDefault();
+  if (!orderListData.length) {
+    alert("Корзина пустая")
+    orderForm.reset();
+    modalOrder.closeModal("close");
+    return;
+  }
+
+  const data = getFormData(orderForm)
+
+  const response = await sendData({
+    ...data,
+    products: orderListData,
   });
 
-  orderForm.addEventListener('submit', async (event) => {
-    event.preventDefault()
+  const {message} = await response.json()
 
-    if (!orderListData.length) {
-      alert("Корзина пуста")
-      orderForm.reset();
-      modalOrder.closeModal("close");
-      return
-    }
+  alert(message)
 
-    const data = getFormData(orderForm)
+  cartDataControl.clearLS()
+  orderForm.reset()
+  modalOrder.closeModal('close')
+}
 
-    const response = await sendData({
-      ...data,
-      products: orderListData,
-    });
-
-    const {message} = await response.json()
-
-    alert(message)
-
-    cartDataControl.clearLS()
-    orderForm.reset()
-    modalOrder.closeModal('close')
-  })
-
+export const renderCart = (data) => {
+  renderCartList(data);
+  orderForm.addEventListener("submit", handlerSubmit);
   orderList.addEventListener("click", (e) => {
     if (e.target.classList.contains("order__item-delete")) {
-      console.log('e.target: ', e.target)
       cartDataControl.removeLS(e.target.dataset.idls);
-      orderListData = renderCartList({
-        data,
-        orderCount,
-        orderList,
-        orderTotalPrice,
-      });
+      renderCartList(data);
     }
   });
 }
