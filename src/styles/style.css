@@ -610,6 +610,7 @@ fieldset {
 .make__upsale {
   color: #D5B4A8;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .make__footer {

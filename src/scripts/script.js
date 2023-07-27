@@ -4,11 +4,14 @@ import { getData } from "./apiService.js"
 import { renderCart } from "./cartControl.js"
 import { calculateMakeYourOwn, calculateAdd } from "./formControl.js"
 import { addMouseMoveListener } from "./decorAnimation.js"
+import { updateUpsales } from "./updateUpsales.js";
 
 const init = async () => {
   const goodsListElem = document.querySelector('.goods__list')
   const data = await getData()
   renderCardsList(goodsListElem, data);
+
+  updateUpsales();
   
   modalController({
     modal: '.modal_order',
@@ -44,3 +47,6 @@ const init = async () => {
 }
 
 init()
+
+// Call the function to update the modals
+
