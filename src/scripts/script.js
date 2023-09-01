@@ -7,12 +7,17 @@ import { addMouseMoveListener } from "./decorAnimation.js"
 import { updateUpsales } from "./updateUpsales.js";
 
 const init = async () => {
+  const images = document.querySelectorAll('.decor__img');
+  addMouseMoveListener(images);
+
   const goodsListElem = document.querySelector('.goods__list')
+
+
   const data = await getData()
   renderCardsList(goodsListElem, data);
 
   updateUpsales();
-  
+
   modalController({
     modal: '.modal_order',
     btnOpen: '.header__btn-order',
@@ -28,7 +33,7 @@ const init = async () => {
     btnOpen: '.cocktail__btn_make',
     close: resetFormMakeYourOwn,
   })
-  
+
   const {fillInForm: fillInFormAdd, resetForm: resetFormAdd} = calculateAdd()
 
   modalController({
@@ -42,8 +47,6 @@ const init = async () => {
     close: resetFormAdd
   })
 
-  const images = document.querySelectorAll('.decor__img');
-  addMouseMoveListener(images);
 }
 
 init()
